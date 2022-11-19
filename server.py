@@ -77,7 +77,8 @@ def accept_clients(the_server, y):
     while True:
         client, addr = the_server.accept()
         conn = context.wrap_socket(client, server_side=True) #SSL established, and certificate verified
-        print("\nSSL established. Peer: {}".format(conn.getpeercert())) # client can now communicate with server
+        print("\nSSL established. Peer: {}".format(conn.getpeercert())) 
+        # client can now communicate with server, print out the ca certificate from the client
         clients.append(conn)
         print("\nCipher being used is: {}" .format(conn.cipher()))
         threading._start_new_thread(send_receive_client_message, (conn, addr))
@@ -111,7 +112,6 @@ def send_receive_client_message(client_connection, client_ip_addr):
     for c in clients_names:
         client_connection.send(c.encode())
 
-    # update client names display
 
 
     while True:

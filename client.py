@@ -35,6 +35,7 @@ tkMessage = tk.Text(bottom, height=2, width=55)
 tkMessage.pack(side=tk.LEFT, padx=(4, 15), pady=(5, 10))
 tkMessage.config(highlightbackground="black", state="disabled")
 tkMessage.bind("<Return>", (lambda event: getMessage(tkMessage.get("1.0", tk.END))))
+#either send with return or with send button 
 btnSend = tk.Button(bottom, text="Send", command=lambda: getMessage(tkMessage.get("1.0", tk.END)))
 btnSend.pack(side=tk.LEFT)
 tkMessage.tag_config("tag_your_message", foreground="blue")
@@ -43,6 +44,7 @@ bottom.pack(side=tk.BOTTOM)
 
 def connect():
     global username, client
+    #in order to connect, you must enter your name
     if len(entName.get()) < 1:
         tk.messagebox.showerror(title="ERROR!!!", message="You MUST enter your first name <e.g. John>")
     else:
@@ -58,6 +60,7 @@ server_sni_hostname = 'example.com'
 server_cert = 'server.crt'
 client_cert = 'client.crt'
 client_key = 'client.key'
+
 
 context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=server_cert) #used to authenticate the server, sets verify mode to cert required
 context.load_cert_chain(certfile=client_cert, keyfile=client_key)
@@ -76,7 +79,6 @@ def connect_to_server(name):
         tkMessage.config(state=tk.NORMAL)
 
         # start a thread to keep receiving message from server
-        # do not block the main thread :)
         threading._start_new_thread(receive_message_from_server, (client, "m"))
     except Exception as e:
         tk.messagebox.showerror( message="Cannot connect to host: " + HOST_ADDR + " on port: " + str(HOST_PORT) + " Server may be Unavailable. Try again later")
@@ -90,9 +92,6 @@ def receive_message_from_server(sck, m):
         if not from_server: break
 
         # display message from server on the chat window
-
-        # enable the display area and insert the text and then disable.
-        # why? Apparently, tkinter does not allow us insert into a disabled Text widget :(
         texts = tkDisplay.get("1.0", tk.END).strip()
         tkDisplay.config(state=tk.NORMAL)
         if len(texts) < 1:
@@ -104,7 +103,6 @@ def receive_message_from_server(sck, m):
         tkDisplay.config(state=tk.DISABLED)
         tkDisplay.see(tk.END)
 
-        # print("Server says: " +from_server)
 
     sck.close()
     window.destroy()
@@ -117,8 +115,6 @@ def getMessage(msg):
     msg = msg.replace('\n', '')
     texts = tkDisplay.get("1.0", tk.END).strip()
 
-    # enable the display area and insert the text and then disable.
-    # why? Apparently, tkinter does not allow use insert into a disabled Text widget :(
     tkDisplay.config(state=tk.NORMAL)
     if len(texts) < 1:
         tkDisplay.insert(tk.END, "You->" + msg, "tag_your_message") # no line
