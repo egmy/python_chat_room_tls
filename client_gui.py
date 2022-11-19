@@ -2,43 +2,39 @@ import tkinter as tk
 from tkinter import messagebox
 import socket
 import threading
-import ssl
 
 window = tk.Tk()
-window.title("Client Window")
+window.title("Client")
 username = " "
 
+
 topFrame = tk.Frame(window)
-lblName = tk.Label(topFrame, text = "Enter your Name:", height=4).pack(side=tk.LEFT)
+lblName = tk.Label(topFrame, text = "Name:").pack(side=tk.LEFT)
 entName = tk.Entry(topFrame)
 entName.pack(side=tk.LEFT)
 btnConnect = tk.Button(topFrame, text="Connect", command=lambda : connect())
 btnConnect.pack(side=tk.LEFT)
-
+#btnConnect.bind('<Button-1>', connect)
 topFrame.pack(side=tk.TOP)
 
 displayFrame = tk.Frame(window)
-lblLine = tk.Label(displayFrame, text="Eric's Chat Room").pack()
+lblLine = tk.Label(displayFrame, text="*********************************************************************").pack()
 scrollBar = tk.Scrollbar(displayFrame)
 scrollBar.pack(side=tk.RIGHT, fill=tk.Y)
-tkDisplay = tk.Text(displayFrame, height=30, width=55)
+tkDisplay = tk.Text(displayFrame, height=20, width=55)
 tkDisplay.pack(side=tk.LEFT, fill=tk.Y, padx=(5, 0))
-tkDisplay.tag_config("tag_your_message", foreground="red")
+tkDisplay.tag_config("tag_your_message", foreground="blue")
 scrollBar.config(command=tkDisplay.yview)
-tkDisplay.config(yscrollcommand=scrollBar.set, background="yellow", highlightbackground="black", state="disabled")
+tkDisplay.config(yscrollcommand=scrollBar.set, background="#F4F6F7", highlightbackground="grey", state="disabled")
 displayFrame.pack(side=tk.TOP)
 
 
-
-bottom = tk.Frame(window)
-tkMessage = tk.Text(bottom, height=2, width=55)
-tkMessage.pack(side=tk.LEFT, padx=(4, 15), pady=(5, 10))
-tkMessage.config(highlightbackground="black", state="disabled")
-tkMessage.bind("<Return>", (lambda event: getMessage(tkMessage.get("1.0", tk.END))))
-btnSend = tk.Button(bottom, text="Send", command=lambda: getMessage(tkMessage.get("1.0", tk.END)))
-btnSend.pack(side=tk.LEFT)
-tkMessage.tag_config("tag_your_message", foreground="blue")
-bottom.pack(side=tk.BOTTOM)
+bottomFrame = tk.Frame(window)
+tkMessage = tk.Text(bottomFrame, height=2, width=55)
+tkMessage.pack(side=tk.LEFT, padx=(5, 13), pady=(5, 10))
+tkMessage.config(highlightbackground="grey", state="disabled")
+tkMessage.bind("<Return>", (lambda event: getChatMessage(tkMessage.get("1.0", tk.END))))
+bottomFrame.pack(side=tk.BOTTOM)
 
 
 def connect():
@@ -50,26 +46,17 @@ def connect():
         connect_to_server(username)
 
 
-
+# network client
 client = None
-HOST_ADDR = "127.0.0.1"
-HOST_PORT = 8082
-server_sni_hostname = 'example.com'
-server_cert = 'server.crt'
-client_cert = 'client.crt'
-client_key = 'client.key'
-
-context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=server_cert) #used to authenticate the server, sets verify mode to cert required
-context.load_cert_chain(certfile=client_cert, keyfile=client_key)
+HOST_ADDR = "0.0.0.0"
+HOST_PORT = 8080
 
 def connect_to_server(name):
     global client, HOST_PORT, HOST_ADDR
     try:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client = context.wrap_socket(client, server_side=False, server_hostname=server_sni_hostname)
         client.connect((HOST_ADDR, HOST_PORT))
-        client.send(name.encode())
-        print("\nCipher being used is: {}" .format(client.cipher())) #cipher being used for the connection
+        client.send(name.encode()) # Send name to server after connecting
 
         entName.config(state=tk.DISABLED)
         btnConnect.config(state=tk.DISABLED)
@@ -79,13 +66,12 @@ def connect_to_server(name):
         # do not block the main thread :)
         threading._start_new_thread(receive_message_from_server, (client, "m"))
     except Exception as e:
-        tk.messagebox.showerror( message="Cannot connect to host: " + HOST_ADDR + " on port: " + str(HOST_PORT) + " Server may be Unavailable. Try again later")
+        tk.messagebox.showerror(title="ERROR!!!", message="Cannot connect to host: " + HOST_ADDR + " on port: " + str(HOST_PORT) + " Server may be Unavailable. Try again later")
 
 
 def receive_message_from_server(sck, m):
     while True:
         from_server = sck.recv(4096).decode()
-
 
         if not from_server: break
 
@@ -98,8 +84,7 @@ def receive_message_from_server(sck, m):
         if len(texts) < 1:
             tkDisplay.insert(tk.END, from_server)
         else:
-            tkDisplay.insert(tk.END, "\n"+ from_server)
-        
+            tkDisplay.insert(tk.END, "\n\n"+ from_server)
 
         tkDisplay.config(state=tk.DISABLED)
         tkDisplay.see(tk.END)
@@ -110,9 +95,7 @@ def receive_message_from_server(sck, m):
     window.destroy()
 
 
-def getMessage(msg):
-
-
+def getChatMessage(msg):
 
     msg = msg.replace('\n', '')
     texts = tkDisplay.get("1.0", tk.END).strip()
@@ -123,26 +106,23 @@ def getMessage(msg):
     if len(texts) < 1:
         tkDisplay.insert(tk.END, "You->" + msg, "tag_your_message") # no line
     else:
-        tkDisplay.insert(tk.END, "\n" + "You->" + msg, "tag_your_message")
+        tkDisplay.insert(tk.END, "\n\n" + "You->" + msg, "tag_your_message")
 
     tkDisplay.config(state=tk.DISABLED)
 
     send_mssage_to_server(msg)
 
-   
+    tkDisplay.see(tk.END)
+    tkMessage.delete('1.0', tk.END)
 
 
 def send_mssage_to_server(msg):
     client_msg = str(msg)
     client.send(client_msg.encode())
-    tkDisplay.see(tk.END)
-    tkMessage.delete('1.0', tk.END)
     if msg == "exit":
         client.close()
         window.destroy()
     print("Sending message")
-    print(client_msg)
-
 
 
 window.mainloop()
